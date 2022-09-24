@@ -29,7 +29,7 @@ sudo reboot'''
 security_group_name = "Web"
 vpc = "default"
 SQS_INPUT_QUEUE_NAME="input_queue"
-SQL_OUTPUT_QUEUE_NAME="output_queue"
+SQS_OUTPUT_QUEUE_NAME="output_queue"
 instance_attributes = {
     "Name":"Web Tier Worker",
     "Key_Name":"cc",
@@ -93,19 +93,29 @@ if WEB_INSTANCE==None:
     )
     print("Created Instance - {} - {}.".format(instance_attributes["Name"],WEB_INSTANCE[0].id))
 # # Setup SQS
-sqs = boto3.client('sqs',region_name='us-east-1',
-                    aws_access_key_id= userinfo['AWS_ACCESS_KEY_ID'],
-                    aws_secret_access_key= userinfo['AWS_SECRET_ACCESS_KEY'])
-input_queue=None
-try:
-    input_queue = sqs.create_queue(QueueName=SQS_INPUT_QUEUE_NAME)
-    print("Created Queue")
-except sqs.Client.exceptions.QueueNameExists as e:
-    input_queue = sqs.get_queue_url(
-    QueueName=SQS_INPUT_QUEUE_NAME
-)
-    print("Queue Exists")
-print(input_queue)
+# sqs = boto3.client('sqs',region_name='us-east-1',
+#                     aws_access_key_id= userinfo['AWS_ACCESS_KEY_ID'],
+#                     aws_secret_access_key= userinfo['AWS_SECRET_ACCESS_KEY'])
+# input_queue=None
+# try:
+#     input_queue = sqs.create_queue(QueueName=SQS_INPUT_QUEUE_NAME)
+#     print("Created Input Queue")
+# except sqs.Client.exceptions.QueueNameExists as e:
+#     input_queue = sqs.get_queue_url(
+#     QueueName=SQS_INPUT_QUEUE_NAME
+# )
+#     print("Input Queue Exists")
+# print(input_queue)
+# output_queue = None
+# try:
+#     output_queue = sqs.create_queue(QueueName=SQS_OUTPUT_QUEUE_NAME)
+#     print("Created Output Queue")
+# except sqs.Client.exceptions.QueueNameExists as e:
+#     output_queue = sqs.get_queue_url(
+#     QueueName=SQS_OUTPUT_QUEUE_NAME
+# )
+#     print("Output Queue Exists")
+# print(output_queue)
 
 # sqs = boto3.client('sqs',
 #                     region_name='us-east-1',
