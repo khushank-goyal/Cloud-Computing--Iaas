@@ -14,13 +14,27 @@ ec2 = boto3.resource(
                     aws_access_key_id= userinfo['AWS_ACCESS_KEY_ID'],
                     aws_secret_access_key= userinfo['AWS_SECRET_ACCESS_KEY'])
 security_group_id = ""
+user_data = '''#!/bin/bash
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt install nodejs -y
+sudo apt install npm -y
+sudo apt install build-essential -y
+sudo npm install -g express -y
+sudo npm install -g multer -y
+sudo npm install aws-sdk
+echo "test" > /tmp/test.txt
+sudo npm i -S image-to-base64
+sudo reboot'''
 security_group_name = "Web"
 vpc = "default"
+SQS_INPUT_QUEUE_NAME="input_queue"
+SQL_OUTPUT_QUEUE_NAME="output_queue"
 instance_attributes = {
     "Name":"Web Tier Worker",
     "Key_Name":"cc",
     "Image_ID":"ami-0bb1040fdb5a076bc",
-    "Inctance_Type":"t2.micro"
+    "Instance_Type":"t2.micro"
 }
 SECURITY_GROUP = None
 try:
@@ -51,7 +65,8 @@ instances = ec2.instances.filter(
             'Values': [
                 instance_attributes["Name"]
             ]
-        }
+        },
+        {'Name': 'instance-state-name', 'Values': ['running']}
     ]
 )
 for x in instances:
@@ -64,7 +79,7 @@ if WEB_INSTANCE==None:
         MinCount=1,
         MaxCount=1,
         InstanceType=instance_attributes["Instance_Type"],
-        SecurityGroupIds=[ security_group_id ] ,
+        SecurityGroupIds=[ SECURITY_GROUP.id ] ,
         KeyName=instance_attributes["Key_Name"],
         TagSpecifications=[{'ResourceType': 'instance',
                                 	'Tags': [
@@ -72,10 +87,26 @@ if WEB_INSTANCE==None:
                                         	'Key': 'Name',
                                         	'Value': instance_attributes["Name"]
                                     	}
-                                	]}]
+                                	]}],
+        UserData=user_data,
                 
     )
+    print("Created Instance - {} - {}.".format(instance_attributes["Name"],WEB_INSTANCE[0].id))
 # # Setup SQS
+sqs = boto3.client('sqs',region_name='us-east-1',
+                    aws_access_key_id= userinfo['AWS_ACCESS_KEY_ID'],
+                    aws_secret_access_key= userinfo['AWS_SECRET_ACCESS_KEY'])
+input_queue=None
+try:
+    input_queue = sqs.create_queue(QueueName=SQS_INPUT_QUEUE_NAME)
+    print("Created Queue")
+except sqs.Client.exceptions.QueueNameExists as e:
+    input_queue = sqs.get_queue_url(
+    QueueName=SQS_INPUT_QUEUE_NAME
+)
+    print("Queue Exists")
+print(input_queue)
+
 # sqs = boto3.client('sqs',
 #                     region_name='us-east-1',
 #                     aws_access_key_id=userinfo['AWS_ACCESS_KEY_ID'],
